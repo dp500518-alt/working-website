@@ -2,7 +2,7 @@
   "name": "green-enterprise-vercel",
   "version": "1.0.0",
   "engines": {
-    "node": "18.x"
+    "node": "20.x"
   },
   "dependencies": {
     "express": "^4.18.2",
