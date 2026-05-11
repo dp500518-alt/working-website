@@ -117,7 +117,7 @@ contactForm.addEventListener('submit', async (e) => {
 
     try {
         // Send data to backend API (SMTP Email Server)
-        const response = await fetch('http://localhost:3001/api/inquiries', {
+        const response = await fetch('/api/inquiries', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

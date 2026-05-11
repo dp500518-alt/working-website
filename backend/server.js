@@ -84,15 +84,17 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-app.listen(PORT, () => {
-    console.log('\n🚀 ========================================');
-    console.log('🏗️  GREEN ENTERPRISE BACKEND SERVER');
-    console.log('========================================');
-    console.log(`✅ Server running on: http://localhost:${PORT}`);
-    console.log(`✅ API endpoint: http://localhost:${PORT}/api`);
-    console.log(`✅ Admin panel: http://localhost:${PORT}/admin`);
-    console.log(`✅ Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log('========================================\n');
-});
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log('\n🚀 ========================================');
+        console.log('🏗️  GREEN ENTERPRISE BACKEND SERVER');
+        console.log('========================================');
+        console.log(`✅ Server running on: http://localhost:${PORT}`);
+        console.log(`✅ API endpoint: http://localhost:${PORT}/api`);
+        console.log(`✅ Admin panel: http://localhost:${PORT}/admin`);
+        console.log(`✅ Environment: ${process.env.NODE_ENV || 'development'}`);
+        console.log('========================================\n');
+    });
+}
 
 module.exports = app;
