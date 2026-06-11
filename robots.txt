@@ -1,0 +1,8 @@
+# Green Enterprise - robots.txt
+# Allow all web crawlers full access
+
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://greenenterprisework.vercel.app/sitemap.xml
