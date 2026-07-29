@@ -1,100 +1,133 @@
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
-const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '.env') });
+const express = require('express')
+const nodemailer = require('nodemailer')
+const cors = require('cors')
+const helmet = require('helmet')
+const rateLimit = require('express-rate-limit')
+require('dotenv').config()
 
-// Initialize Express app
-const app = express();
-const PORT = process.env.PORT || 3000;
+const app = express()
+const PORT = process.env.PORT || 3001
 
-// Import routes
-const inquiriesRouter = require('./routes/inquiries');
-const equipmentRouter = require('./routes/equipment');
+app.disable('x-powered-by')
+
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", "https:"],
+      frameAncestors: ["'none'"]
+    }
+  },
+  frameguard: { action: 'deny' },
+  noSniff: true,
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  hsts: { maxAge: 31536000, includeSubDomains: true, preload: true }
+}))
+
+app.use((req, res, next) => {
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=()')
+  next()
+})
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { success: false, error: 'Too many requests. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false
+})
 
 // Middleware
-app.use(helmet()); // Security headers
 app.use(cors({
-    origin: process.env.FRONTEND_URL || '*',
-    methods: ['GET', 'POST', 'PATCH', 'DELETE'],
-    credentials: true
-}));
+  origin: ['http://localhost:5173', 'http://localhost:3000'],
+  methods: ['GET', 'POST'],
+}))
+app.use(express.json({ limit: '10kb' }))
 
-app.use(express.json()); // Parse JSON bodies
-app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
+// Create Gmail transporter
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_APP_PASSWORD,
+  },
+})
 
-// Rate limiting
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests per windowMs
-    message: 'Too many requests from this IP, please try again later.'
-});
+// Test transporter on startup
+transporter.verify((error) => {
+  if (error) {
+    console.error('❌ Email transporter error:', error.message)
+    console.error('   Make sure GMAIL_USER and GMAIL_APP_PASSWORD are set in .env')
+  } else {
+    console.log('✅ Email transporter ready — emails will be sent to', process.env.GMAIL_USER)
+  }
+})
 
-app.use('/api/', limiter);
+// POST /contact — receive form and send email
+app.post('/contact', async (req, res) => {
+  const { name, email, projectType, message } = req.body
 
-// Serve static files (admin panel)
-app.use('/admin', express.static(path.join(__dirname, 'public')));
+  if (!name || !email || !message) {
+    return res.status(400).json({ success: false, error: 'Name, email, and message are required.' })
+  }
 
-// API Routes
-app.use('/api/inquiries', inquiriesRouter);
-app.use('/api/equipment', equipmentRouter);
+  const mailOptions = {
+    from: `"Two Lines Studio Website" <${process.env.GMAIL_USER}>`,
+    to: process.env.GMAIL_USER,
+    replyTo: email,
+    subject: `New Enquiry from ${name} — Two Lines Studio`,
+    html: `
+      <div style="font-family: 'Georgia', serif; max-width: 600px; margin: 0 auto; background: #0d0b0a; color: #f5f3ef; padding: 40px; border-radius: 8px;">
+        <h2 style="color: #c4a47c; letter-spacing: 0.2em; text-transform: uppercase; font-size: 1.2rem; margin-bottom: 8px;">Two Lines Studio</h2>
+        <p style="color: #888; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 32px;">New Website Enquiry</p>
+        
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 12px 0; border-bottom: 1px solid rgba(245,243,239,0.1); color: #c4a47c; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; width: 140px;">Name</td>
+            <td style="padding: 12px 0; border-bottom: 1px solid rgba(245,243,239,0.1); font-size: 1rem;">${name}</td>
+          </tr>
+          <tr>
+            <td style="padding: 12px 0; border-bottom: 1px solid rgba(245,243,239,0.1); color: #c4a47c; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em;">Email</td>
+            <td style="padding: 12px 0; border-bottom: 1px solid rgba(245,243,239,0.1); font-size: 1rem;"><a href="mailto:${email}" style="color: #c4a47c;">${email}</a></td>
+          </tr>
+          <tr>
+            <td style="padding: 12px 0; border-bottom: 1px solid rgba(245,243,239,0.1); color: #c4a47c; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em;">Project Type</td>
+            <td style="padding: 12px 0; border-bottom: 1px solid rgba(245,243,239,0.1); font-size: 1rem;">${projectType || 'Not specified'}</td>
+          </tr>
+          <tr>
+            <td style="padding: 12px 0; color: #c4a47c; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; vertical-align: top; padding-top: 16px;">Message</td>
+            <td style="padding: 12px 0; font-size: 1rem; line-height: 1.7; padding-top: 16px;">${message.replace(/\n/g, '<br/>')}</td>
+          </tr>
+        </table>
 
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-    res.json({
-        success: true,
-        message: 'Green Enterprise API is running!',
-        timestamp: new Date().toISOString(),
-        version: '1.0.0'
-    });
-});
+        <p style="margin-top: 40px; font-size: 0.75rem; color: #555; text-align: center; letter-spacing: 0.05em;">
+          Sent from the Two Lines Studio website contact form.<br/>
+          Reply directly to this email to respond to ${name}.
+        </p>
+      </div>
+    `,
+  }
 
-// Root endpoint
-app.get('/', (req, res) => {
-    res.json({
-        message: '🏗️ Welcome to Green Enterprise Backend API',
-        version: '1.0.0',
-        endpoints: {
-            health: '/api/health',
-            inquiries: '/api/inquiries',
-            equipment: '/api/equipment',
-            admin: '/admin'
-        },
-        documentation: 'See README.md for API documentation'
-    });
-});
+  try {
+    await transporter.sendMail(mailOptions)
+    console.log(`✅ Email sent — from ${name} (${email})`)
+    return res.json({ success: true, message: 'Your message has been sent! We will get back to you soon.' })
+  } catch (err) {
+    console.error('❌ Failed to send email:', err.message)
+    return res.status(500).json({ success: false, error: 'Failed to send email. Please try again or contact us directly.' })
+  }
+})
 
-// 404 handler
-app.use((req, res) => {
-    res.status(404).json({
-        success: false,
-        message: 'Endpoint not found'
-    });
-});
+// Export the app for Vercel Serverless Functions
+module.exports = app
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-    console.error('Error:', err);
-    res.status(err.status || 500).json({
-        success: false,
-        message: err.message || 'Internal server error',
-        ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
-    });
-});
-
-// Start server
+// Only listen locally if not running on Vercel
 if (require.main === module) {
-    app.listen(PORT, () => {
-        console.log('\n🚀 ========================================');
-        console.log('🏗️  GREEN ENTERPRISE BACKEND SERVER');
-        console.log('========================================');
-        console.log(`✅ Server running on: http://localhost:${PORT}`);
-        console.log(`✅ API endpoint: http://localhost:${PORT}/api`);
-        console.log(`✅ Admin panel: http://localhost:${PORT}/admin`);
-        console.log(`✅ Environment: ${process.env.NODE_ENV || 'development'}`);
-        console.log('========================================\n');
-    });
+  app.listen(PORT, () => {
+    console.log(`🚀 Two Lines Studio backend running on http://localhost:${PORT}`)
+  })
 }
-
-module.exports = app;
