@@ -24,7 +24,7 @@ export default function About() {
             style={{ fontSize: '1.1rem', fontWeight: 300, textTransform: 'uppercase', letterSpacing: '0.05em', lineHeight: 2 }}
           >
             <p style={{ marginBottom: '2rem' }}>
-              Two Lines Studio is a multidisciplinary design consultancy specializing in Architecture, Interior Design, and Landscape.
+              Green Enterprise is a premier heavy machinery and excavator rental & sales provider serving Ghana and Liberia.
             </p>
             <p style={{ marginBottom: '2rem' }}>
               We deliver end-to-end design solutions — from concept development to execution — ensuring clarity, precision, and consistency throughout the project lifecycle.

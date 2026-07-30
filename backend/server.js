@@ -76,13 +76,13 @@ app.post('/contact', async (req, res) => {
   }
 
   const mailOptions = {
-    from: `"Two Lines Studio Website" <${process.env.GMAIL_USER}>`,
+    from: `"Green Enterprise Website" <${process.env.GMAIL_USER}>`,
     to: process.env.GMAIL_USER,
     replyTo: email,
-    subject: `New Enquiry from ${name} — Two Lines Studio`,
+    subject: `New Enquiry from ${name} — Green Enterprise`,
     html: `
       <div style="font-family: 'Georgia', serif; max-width: 600px; margin: 0 auto; background: #0d0b0a; color: #f5f3ef; padding: 40px; border-radius: 8px;">
-        <h2 style="color: #c4a47c; letter-spacing: 0.2em; text-transform: uppercase; font-size: 1.2rem; margin-bottom: 8px;">Two Lines Studio</h2>
+        <h2 style="color: #c4a47c; letter-spacing: 0.2em; text-transform: uppercase; font-size: 1.2rem; margin-bottom: 8px;">Green Enterprise</h2>
         <p style="color: #888; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 32px;">New Website Enquiry</p>
         
         <table style="width: 100%; border-collapse: collapse;">
@@ -105,7 +105,7 @@ app.post('/contact', async (req, res) => {
         </table>
 
         <p style="margin-top: 40px; font-size: 0.75rem; color: #555; text-align: center; letter-spacing: 0.05em;">
-          Sent from the Two Lines Studio website contact form.<br/>
+          Sent from the Green Enterprise website contact form.<br/>
           Reply directly to this email to respond to ${name}.
         </p>
       </div>
@@ -128,6 +128,6 @@ module.exports = app
 // Only listen locally if not running on Vercel
 if (require.main === module) {
   app.listen(PORT, () => {
-    console.log(`🚀 Two Lines Studio backend running on http://localhost:${PORT}`)
+    console.log(`🚀 Green Enterprise backend running on http://localhost:${PORT}`)
   })
 }
